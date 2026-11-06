@@ -7,15 +7,14 @@ import {
   Check,
   Eye,
   EyeOff,
-  Leaf,
   Lock,
   Sparkles,
+  Mail,
   User,
   ShieldCheck,
 } from "lucide-react";
 import { api, demoUser } from "@/lib/api";
 import "@/app/auth.css";
-import "@/app/chatheal-theme.css";
 
 type Props = {
   admin: boolean;
@@ -80,124 +79,149 @@ export default function AuthScreen({
   }
 
   return (
-    <main className="glass-auth-page">
-      <div className="auth-theme-control"><ThemeToggle /></div>
-      {/* Wall Texture Background with Ambient Dark Vignette */}
-      <div className="glass-auth-bg" />
-
-      {/* Modern Wall Sconce Lamp Fixture & Radiant Light Beam */}
-      <div className="glass-sconce-rig">
-        <div className="glass-sconce-fixture">
-          <div className="glass-sconce-bulb" />
-        </div>
-        <div className="glass-sconce-beam" />
+    <main className="lux-auth-page">
+      <div className="auth-theme-control">
+        <ThemeToggle />
       </div>
 
-      {/* Atmospheric Ambient Glow Orbs */}
-      <div className="glass-ambient-glow" />
+      {/* Atmospheric Ambient Lighting Behind Card */}
+      <div className="lux-auth-glow-top" />
+      <div className="lux-auth-glow-bottom" />
 
-      {/* Main Glassmorphic Login Card (Exactly matching Reference Image 2) */}
-      <div className="glass-auth-container">
-        {/* Official ChatHeal Full Brand Logo (Replacing generic text pill) */}
-        <div className="glass-brand-logo-wrap">
-          <img
-            src="/brand-logo.png"
-            alt="ChatHeal - Your Wellness Companion"
-            className="glass-brand-logo-img"
-          />
+      {/* Main Glassmorphic Container */}
+      <div className="lux-auth-container">
+        {/* Brand Lockup Emblem */}
+        <div className="lux-auth-brand-emblem">
+          <div className="lux-auth-logo-badge">
+            <img
+              src="/logo.png"
+              alt="ChatHeal"
+              className="lux-auth-logo-img"
+            />
+          </div>
+          <div className="lux-auth-brand-text">
+            <span className="lux-auth-brand-name">ChatHeal</span>
+            <span className="lux-auth-brand-subtitle">
+              Atelier · Clinical Practice Suite
+            </span>
+          </div>
         </div>
 
-        <section className="glass-auth-card">
-          {/* Card Header Title */}
-          <h1 className="glass-auth-title">
-            {mode === "signin" ? "Login" : "Register"}
-          </h1>
+        {/* Floating Card */}
+        <section className="lux-auth-card">
+          {/* Card Eyebrow Pill */}
+          <div className="lux-auth-eyebrow">
+            <Sparkles size={12} className="lux-sparkle-icon" />
+            <span>PRACTITIONER EXECUTIVE ACCESS</span>
+          </div>
 
-          <form onSubmit={submit} className="glass-auth-form">
+          <h1 className="lux-auth-heading">
+            {mode === "signin" ? "Login" : "Create Account"}
+          </h1>
+          <p className="lux-auth-subtext">
+            {mode === "signin"
+              ? "Access your evidence-based regimens, care packages, and telehealth clinic."
+              : "Create your clinical workspace credentials."}
+          </p>
+
+          <form onSubmit={submit} className="lux-auth-form">
             {mode === "signup" && (
-              <div className="glass-input-wrapper">
-                <input
-                  type="text"
-                  required
-                  autoComplete="name"
-                  id="auth-name"
-                  aria-label="Full name"
-                  placeholder="Full Name"
-                  className="glass-input"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                />
-                <span className="glass-input-icon">
-                  <User size={19} />
-                </span>
+              <div className="lux-auth-field">
+                <label className="lux-auth-label" htmlFor="auth-name">
+                  Full Name
+                </label>
+                <div className="lux-input-box">
+                  <input
+                    type="text"
+                    required
+                    autoComplete="name"
+                    id="auth-name"
+                    aria-label="Full name"
+                    placeholder="e.g. Dr. Sujitha C."
+                    className="lux-auth-input"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                  <span className="lux-input-trailing-icon">
+                    <User size={18} />
+                  </span>
+                </div>
               </div>
             )}
 
-            {/* Username / Email Field with User Icon */}
-            <div className="glass-input-wrapper">
-              <label className="glass-field-label" htmlFor="auth-email">Email address</label>
-              <input
-                type="email"
-                autoComplete="username"
-                required
-                id="auth-email"
-                aria-label="Email address"
-                placeholder="Email address"
-                className="glass-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <span className="glass-input-icon">
-                <User size={19} />
-              </span>
+            {/* Email Field */}
+            <div className="lux-auth-field">
+              <label className="lux-auth-label" htmlFor="auth-email">
+                Email address
+              </label>
+              <div className="lux-input-box">
+                <input
+                  type="email"
+                  autoComplete="username"
+                  required
+                  id="auth-email"
+                  aria-label="Email address"
+                  placeholder="name@practice.com"
+                  className="lux-auth-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <span className="lux-input-trailing-icon">
+                  <Mail size={18} />
+                </span>
+              </div>
             </div>
 
-            {/* Password Field with Lock Icon & Reveal Toggle */}
-            <div className="glass-input-wrapper">
-              <label className="glass-field-label" htmlFor="auth-password">Password</label>
-              <input
-                type={showPassword ? "text" : "password"}
-                autoComplete={
-                  mode === "signin" ? "current-password" : "new-password"
-                }
-                required
-                id="auth-password"
-                aria-label="Password"
-                placeholder="Password"
-                className="glass-input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                className="glass-input-icon glass-icon-btn"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                title={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Lock size={18} />}
-              </button>
+            {/* Password Field */}
+            <div className="lux-auth-field">
+              <label className="lux-auth-label" htmlFor="auth-password">
+                Password
+              </label>
+              <div className="lux-input-box">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={
+                    mode === "signin" ? "current-password" : "new-password"
+                  }
+                  required
+                  id="auth-password"
+                  aria-label="Password"
+                  placeholder="••••••••••••"
+                  className="lux-auth-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="lux-input-icon-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Lock size={18} />}
+                </button>
+              </div>
             </div>
 
-            {/* Utility Row: Remember Me & Forgot Password */}
+            {/* Utility Row */}
             {mode === "signin" && (
-              <div className="glass-utility-row">
-                <label className="glass-checkbox-label">
+              <div className="lux-auth-utility-row">
+                <label className="lux-auth-checkbox-label">
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="glass-checkbox-input"
+                    className="lux-checkbox-native"
                   />
-                  <span className="glass-custom-checkbox">
+                  <span className="lux-checkbox-custom">
                     {rememberMe && <Check size={12} strokeWidth={3} />}
                   </span>
-                  <span>Remember me</span>
+                  <span>Remember workstation</span>
                 </label>
 
                 <button
                   type="button"
-                  className="glass-forgot-btn"
+                  className="lux-auth-forgot-btn"
                   onClick={() => setForgotNotice(true)}
                 >
                   Forgot password?
@@ -205,49 +229,55 @@ export default function AuthScreen({
               </div>
             )}
 
-            {/* Error & Info Alerts */}
+            {/* Alerts */}
             {error && (
-              <div className="glass-alert-error" role="alert">
+              <div className="lux-auth-alert-error" role="alert">
                 <span>{error}</span>
               </div>
             )}
 
             {forgotNotice && (
-              <div className="glass-alert-info" role="status">
+              <div className="lux-auth-alert-info" role="status">
                 <span>
-                  Default password: <strong>admin123</strong>
+                  Demo credential: <strong>coach@example.com</strong> /{" "}
+                  <strong>admin123</strong>
                 </span>
               </div>
             )}
 
-            {/* Main Solid White Pill Button */}
-            <button type="submit" className="glass-submit-btn" disabled={busy}>
-              {busy ? "Signing in..." : mode === "signin" ? "Login" : "Register"}
+            {/* Gorgeous Emerald-to-Teal Gradient Login Button */}
+            <button
+              type="submit"
+              className="lux-auth-submit-btn"
+              disabled={busy}
+            >
+              <span>{busy ? "Logging in..." : mode === "signin" ? "Login" : "Create Account"}</span>
+              <ArrowRight size={18} className="lux-btn-arrow" />
             </button>
 
-            {/* Quick Demo Sandbox Access */}
+            {/* Frosted Secondary Demo Button */}
             <button
               type="button"
-              className="glass-demo-btn"
+              className="lux-auth-demo-btn"
               onClick={() => {
                 sessionStorage.setItem(sessionKey, "demo");
                 setDemo(true);
                 setUser(demoUser(admin));
               }}
             >
-              <Sparkles size={14} />
-              <span>Explore {admin ? "Coach" : "Client"} Demo</span>
+              <Sparkles size={15} style={{ color: "#34d399" }} />
+              <span>Explore {admin ? "Coach" : "Client"} Demo Workspace</span>
             </button>
           </form>
 
-          {/* Footer Link: Register / Sign in Toggle */}
-          <div className="glass-footer-prompt">
+          {/* Toggle Register / Login */}
+          <div className="lux-auth-footer-prompt">
             {mode === "signin" ? (
               <span>
-                Don't have an account?{" "}
+                Don&apos;t have an invitation?{" "}
                 <button
                   type="button"
-                  className="glass-toggle-link"
+                  className="lux-auth-toggle-btn"
                   onClick={() => changeMode("signup")}
                 >
                   Register
@@ -255,16 +285,22 @@ export default function AuthScreen({
               </span>
             ) : (
               <span>
-                Already have an account?{" "}
+                Already registered?{" "}
                 <button
                   type="button"
-                  className="glass-toggle-link"
+                  className="lux-auth-toggle-btn"
                   onClick={() => changeMode("signin")}
                 >
-                  Login
+                  Sign in
                 </button>
               </span>
             )}
+          </div>
+
+          {/* Security Assurance */}
+          <div className="lux-auth-trust-badge">
+            <ShieldCheck size={14} style={{ color: "#10b981", flexShrink: 0 }} />
+            <span>End-to-end encrypted clinical practice workspace</span>
           </div>
         </section>
       </div>
