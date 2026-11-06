@@ -739,7 +739,7 @@ export default function ClientsScreen() {
                       }}
                     >
                       <span className="lux-report-brand-name">
-                        ChatHeal Atelier
+                        ChatHeal 
                       </span>
                       <span
                         style={{

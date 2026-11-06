@@ -102,7 +102,7 @@ export default function AuthScreen({
           <div className="lux-auth-brand-text">
             <span className="lux-auth-brand-name">ChatHeal</span>
             <span className="lux-auth-brand-subtitle">
-              Atelier · Clinical Practice Suite
+              Clinical Practice Suite
             </span>
           </div>
         </div>

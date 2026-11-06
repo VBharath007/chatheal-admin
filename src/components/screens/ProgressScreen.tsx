@@ -632,7 +632,7 @@ function ClinicalReportModal({
         <div className="lux-report-header">
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span className="lux-report-brand-name">ChatHeal Atelier</span>
+              <span className="lux-report-brand-name">ChatHeal </span>
               <span
                 style={{
                   fontSize: "11px",

@@ -6,7 +6,7 @@ import "./theme-tokens.css";
 import "./studio.css";
 
 export const metadata: Metadata = {
-  title: "ChatHeal Atelier | Coach Workspace",
+  title: "ChatHeal | Coach Workspace",
   description:
     "Client nutrition records, wellness content, appointments and scheduled video consultations.",
   icons: {
