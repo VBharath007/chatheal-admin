@@ -1,0 +1,17 @@
+[
+  "Theme changes on login",
+  "Theme persists after reload",
+  "Demo login opens workspace",
+  "Notification closes with Escape",
+  "Client search filters results",
+  "Client empty search state",
+  "Add client dialog opens",
+  "Client dialog closes with Escape",
+  "Dark heading uses readable foreground",
+  "Package editor opens",
+  "Mobile drawer closes with Escape",
+  "Mobile navigation closes after route selection",
+  "Client nutrition details load",
+  "Nutrition client selection works",
+  "Theme switch works on mobile"
+]
