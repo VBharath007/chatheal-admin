@@ -63,11 +63,15 @@ export function Modal({
   eyebrow = "CLINICAL WORKSPACE",
   close,
   children,
+  className = "",
+  maxWidth,
 }: {
   title: string;
   eyebrow?: string;
   close: () => void;
   children: React.ReactNode;
+  className?: string;
+  maxWidth?: string | number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -103,14 +107,15 @@ export function Modal({
   }, [close]);
 
   return (
-    <div className="modal-backdrop" onClick={close} role="presentation">
+    <div className={`modal-backdrop ${className ? `${className}-backdrop` : ""}`.trim()} onClick={close} role="presentation">
       <div
-        className="modal"
+        className={`modal ${className}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
         ref={ref}
+        style={maxWidth ? { maxWidth: typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth, width: "100%" } : undefined}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="section-heading modal-header-bar">

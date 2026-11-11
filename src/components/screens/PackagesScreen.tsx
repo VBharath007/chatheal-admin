@@ -27,6 +27,7 @@ import {
   money,
 } from "@/lib/catalog";
 import { Modal, Field } from "../ui";
+import PackageEditorModal from "./PackageEditorModal";
 
 const IMAGE_PRESETS = [
   { label: "Morning Oats & Berries", url: "/images/breakfast.jpg" },
@@ -122,21 +123,7 @@ export default function PackagesScreen() {
   const maxPrice = prices.length ? Math.max(...prices) : 0;
 
   // Handle Edit Save
-  function handleSaveEdit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editItem) return;
-
-    // Recalculate effective monthly price
-    const calculatedMonthly =
-      editItem.durationDays > 0
-        ? Math.round((editItem.price / editItem.durationDays) * 30)
-        : editItem.price;
-
-    const updated = {
-      ...editItem,
-      effectiveMonthly: editItem.effectiveMonthly || calculatedMonthly,
-    };
-
+  function handleSaveEdit(updated: PackagePlan) {
     const next = items.map((p) => (p.id === updated.id ? updated : p));
     persist(
       next,
@@ -158,27 +145,7 @@ export default function PackagesScreen() {
   }
 
   // Handle Add Save
-  function handleSaveNew(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newForm.title.trim()) return;
-
-    const parsedFeatures = featuresText
-      .split("\n")
-      .map((f) => f.trim())
-      .filter(Boolean);
-
-    const calculatedMonthly =
-      newForm.durationDays > 0
-        ? Math.round((newForm.price / newForm.durationDays) * 30)
-        : newForm.price;
-
-    const created: PackagePlan = {
-      ...newForm,
-      features:
-        parsedFeatures.length > 0 ? parsedFeatures : newForm.features,
-      effectiveMonthly: newForm.effectiveMonthly || calculatedMonthly,
-    };
-
+  function handleSaveNew(created: PackagePlan) {
     const next = [created, ...items];
     persist(
       next,
@@ -595,426 +562,27 @@ export default function PackagesScreen() {
       </button>
 
       {/* =======================================================
-          MODAL 1: ADD NEW PACKAGE
+          MODAL 1: ADD NEW PACKAGE (LUXURY STUDIO + LIVE PREVIEW)
           ======================================================= */}
       {isAddOpen && (
-        <Modal
-          title="Add New Care Package"
-          eyebrow="PACKAGE STUDIO / ADD ON"
-          close={() => setIsAddOpen(false)}
-        >
-          <form onSubmit={handleSaveNew}>
-            <Field label="Package Title" hint="e.g. Yearly Package, 6-Month Transformation, Per Month Care">
-              <input
-                required
-                placeholder="Package Name"
-                value={newForm.title}
-                onChange={(e) =>
-                  setNewForm({
-                    ...newForm,
-                    title: e.target.value,
-                    slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-                  })
-                }
-              />
-            </Field>
-
-            <div className="form-grid">
-              <Field label="Eyebrow Category" hint="e.g. COMPLETE HEALTH MASTERY">
-                <input
-                  required
-                  placeholder="Eyebrow"
-                  value={newForm.eyebrow}
-                  onChange={(e) => setNewForm({ ...newForm, eyebrow: e.target.value })}
-                />
-              </Field>
-
-              <Field label="Highlight Badge" hint="e.g. BEST VALUE · VIP PARTNERSHIP">
-                <input
-                  placeholder="Optional badge pill"
-                  value={newForm.badge || ""}
-                  onChange={(e) => setNewForm({ ...newForm, badge: e.target.value })}
-                />
-              </Field>
-            </div>
-
-            <div className="form-grid">
-              <Field label="Total Price (INR ₹)" hint="e.g. 20000, 12000, 3000">
-                <input
-                  required
-                  type="number"
-                  min={100}
-                  max={1000000}
-                  step={100}
-                  value={newForm.price}
-                  onChange={(e) => {
-                    const price = Number(e.target.value);
-                    const days = newForm.durationDays || 30;
-                    const monthly = Math.round((price / days) * 30);
-                    setNewForm({ ...newForm, price, effectiveMonthly: monthly });
-                  }}
-                />
-              </Field>
-
-              <Field label="Billing Period Label" hint="e.g. Yearly Package, 6 Month Package, Per Month">
-                <input
-                  required
-                  placeholder="e.g. 6 Month Package"
-                  value={newForm.period}
-                  onChange={(e) => setNewForm({ ...newForm, period: e.target.value })}
-                />
-              </Field>
-            </div>
-
-            <div className="form-grid">
-              <Field label="Duration in Days" hint="30 for monthly, 180 for 6-month, 365 for yearly">
-                <input
-                  required
-                  type="number"
-                  min={1}
-                  max={730}
-                  value={newForm.durationDays}
-                  onChange={(e) => {
-                    const durationDays = Number(e.target.value);
-                    const monthly =
-                      durationDays > 0
-                        ? Math.round((newForm.price / durationDays) * 30)
-                        : newForm.price;
-                    setNewForm({ ...newForm, durationDays, effectiveMonthly: monthly });
-                  }}
-                />
-              </Field>
-
-              <Field label="Duration Subtitle Label" hint="e.g. 365-Day VIP Partnership, 6 Months Habit Mastery">
-                <input
-                  required
-                  placeholder="e.g. 180-Day Habit Mastery"
-                  value={newForm.durationLabel}
-                  onChange={(e) => setNewForm({ ...newForm, durationLabel: e.target.value })}
-                />
-              </Field>
-            </div>
-
-            <Field label="Card Media Image">
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <select
-                  value={newForm.image}
-                  onChange={(e) => setNewForm({ ...newForm, image: e.target.value })}
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: 12,
-                    border: "1.5px solid var(--border-cbd5e1)",
-                    background: "var(--surface-ffffff)",
-                    fontSize: 13,
-                  }}
-                >
-                  {IMAGE_PRESETS.map((img) => (
-                    <option key={img.url} value={img.url}>
-                      {img.label} ({img.url})
-                    </option>
-                  ))}
-                </select>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <img
-                    src={newForm.image}
-                    alt="Selected preview"
-                    style={{
-                      width: 68,
-                      height: 48,
-                      borderRadius: 8,
-                      objectFit: "cover",
-                      border: "1.5px solid var(--border-cbd5e1)",
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Or enter custom image path (e.g. /images/nature.jpg)"
-                    value={newForm.image}
-                    onChange={(e) => setNewForm({ ...newForm, image: e.target.value })}
-                    style={{ flex: 1 }}
-                  />
-                </div>
-              </div>
-            </Field>
-
-            <Field label="Description">
-              <textarea
-                required
-                rows={3}
-                placeholder="Explain the clinical outcomes, suitable clients, and coaching journey."
-                value={newForm.description}
-                onChange={(e) => setNewForm({ ...newForm, description: e.target.value })}
-              />
-            </Field>
-
-            <Field
-              label="Key Inclusions & Features"
-              hint="Enter each feature on a new line (appears as green checkmark bullets)"
-            >
-              <textarea
-                required
-                rows={5}
-                placeholder="1-on-1 Intake Consultation&#10;Custom Daily Macro Framework&#10;Daily Food Diary Coaching&#10;WhatsApp Coach Support"
-                value={featuresText}
-                onChange={(e) => setFeaturesText(e.target.value)}
-              />
-            </Field>
-
-            <Field label="Catalogue Status">
-              <div style={{ display: "flex", gap: 18, marginTop: 4 }}>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-                  <input
-                    type="radio"
-                    name="newStatus"
-                    value="active"
-                    checked={newForm.status === "active"}
-                    onChange={() => setNewForm({ ...newForm, status: "active" })}
-                  />
-                  Active (Visible to clients)
-                </label>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-                  <input
-                    type="radio"
-                    name="newStatus"
-                    value="draft"
-                    checked={newForm.status === "draft"}
-                    onChange={() => setNewForm({ ...newForm, status: "draft" })}
-                  />
-                  Local Draft (Hidden from catalogue)
-                </label>
-              </div>
-            </Field>
-
-            <div className="lux-programme-device-notice">
-              <ShieldCheck size={16} />
-              <span>
-                Saves immediately to local storage on this workstation.
-              </span>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24 }}>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setIsAddOpen(false)}
-                style={{ padding: "10px 20px" }}
-              >
-                Cancel
-              </button>
-              <button type="submit" className="btn primary" style={{ padding: "10px 24px" }}>
-                <Plus size={16} /> Create Package
-              </button>
-            </div>
-          </form>
-        </Modal>
+        <PackageEditorModal
+          mode="add"
+          initialData={newForm}
+          onSave={handleSaveNew}
+          onClose={() => setIsAddOpen(false)}
+        />
       )}
 
       {/* =======================================================
-          MODAL 2: EDIT PACKAGE
+          MODAL 2: EDIT PACKAGE (LUXURY STUDIO + LIVE PREVIEW)
           ======================================================= */}
       {editItem && (
-        <Modal
-          title={`Edit: ${editItem.title}`}
-          eyebrow="PACKAGE STUDIO / EDIT DRAFT"
-          close={() => setEditItem(null)}
-        >
-          <form onSubmit={handleSaveEdit}>
-            <Field label="Package Title">
-              <input
-                required
-                value={editItem.title}
-                onChange={(e) => setEditItem({ ...editItem, title: e.target.value })}
-              />
-            </Field>
-
-            <div className="form-grid">
-              <Field label="Eyebrow Category">
-                <input
-                  required
-                  value={editItem.eyebrow}
-                  onChange={(e) => setEditItem({ ...editItem, eyebrow: e.target.value })}
-                />
-              </Field>
-
-              <Field label="Highlight Badge">
-                <input
-                  value={editItem.badge || ""}
-                  onChange={(e) => setEditItem({ ...editItem, badge: e.target.value })}
-                />
-              </Field>
-            </div>
-
-            <div className="form-grid">
-              <Field label="Total Price (INR ₹)" hint="Yearly 20000, 6-Month 12000, Monthly 3000">
-                <input
-                  required
-                  type="number"
-                  min={100}
-                  max={1000000}
-                  step={100}
-                  value={editItem.price}
-                  onChange={(e) => {
-                    const price = Number(e.target.value);
-                    const days = editItem.durationDays || 30;
-                    const monthly = Math.round((price / days) * 30);
-                    setEditItem({ ...editItem, price, effectiveMonthly: monthly });
-                  }}
-                />
-              </Field>
-
-              <Field label="Billing Period Label">
-                <input
-                  required
-                  value={editItem.period}
-                  onChange={(e) => setEditItem({ ...editItem, period: e.target.value })}
-                />
-              </Field>
-            </div>
-
-            <div className="form-grid">
-              <Field label="Duration in Days">
-                <input
-                  required
-                  type="number"
-                  min={1}
-                  max={730}
-                  value={editItem.durationDays}
-                  onChange={(e) => {
-                    const durationDays = Number(e.target.value);
-                    const monthly =
-                      durationDays > 0
-                        ? Math.round((editItem.price / durationDays) * 30)
-                        : editItem.price;
-                    setEditItem({ ...editItem, durationDays, effectiveMonthly: monthly });
-                  }}
-                />
-              </Field>
-
-              <Field label="Duration Subtitle Label">
-                <input
-                  required
-                  value={editItem.durationLabel}
-                  onChange={(e) => setEditItem({ ...editItem, durationLabel: e.target.value })}
-                />
-              </Field>
-            </div>
-
-            <Field label="Card Media Image">
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <select
-                  value={editItem.image}
-                  onChange={(e) => setEditItem({ ...editItem, image: e.target.value })}
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: 12,
-                    border: "1.5px solid var(--border-cbd5e1)",
-                    background: "var(--surface-ffffff)",
-                    fontSize: 13,
-                  }}
-                >
-                  {IMAGE_PRESETS.map((img) => (
-                    <option key={img.url} value={img.url}>
-                      {img.label} ({img.url})
-                    </option>
-                  ))}
-                </select>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <img
-                    src={editItem.image}
-                    alt="Selected preview"
-                    style={{
-                      width: 68,
-                      height: 48,
-                      borderRadius: 8,
-                      objectFit: "cover",
-                      border: "1.5px solid var(--border-cbd5e1)",
-                    }}
-                  />
-                  <input
-                    type="text"
-                    value={editItem.image}
-                    onChange={(e) => setEditItem({ ...editItem, image: e.target.value })}
-                    style={{ flex: 1 }}
-                  />
-                </div>
-              </div>
-            </Field>
-
-            <Field label="Description">
-              <textarea
-                required
-                rows={3}
-                value={editItem.description}
-                onChange={(e) => setEditItem({ ...editItem, description: e.target.value })}
-              />
-            </Field>
-
-            <Field
-              label="Key Inclusions & Features"
-              hint="Enter each inclusion on a new line"
-            >
-              <textarea
-                required
-                rows={5}
-                value={featuresText}
-                onChange={(e) => {
-                  setFeaturesText(e.target.value);
-                  const parsed = e.target.value
-                    .split("\n")
-                    .map((f) => f.trim())
-                    .filter(Boolean);
-                  setEditItem({ ...editItem, features: parsed });
-                }}
-              />
-            </Field>
-
-            <Field label="Catalogue Status">
-              <div style={{ display: "flex", gap: 18, marginTop: 4 }}>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-                  <input
-                    type="radio"
-                    name="editStatus"
-                    value="active"
-                    checked={editItem.status !== "draft"}
-                    onChange={() => setEditItem({ ...editItem, status: "active" })}
-                  />
-                  Active (Visible to clients)
-                </label>
-                <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-                  <input
-                    type="radio"
-                    name="editStatus"
-                    value="draft"
-                    checked={editItem.status === "draft"}
-                    onChange={() => setEditItem({ ...editItem, status: "draft" })}
-                  />
-                  Local Draft (Hidden from catalogue)
-                </label>
-              </div>
-            </Field>
-
-            <div className="lux-programme-device-notice">
-              <ShieldCheck size={16} />
-              <span>
-                Saves only on this device. Updates preview drafts instantly.
-              </span>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24 }}>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setEditItem(null)}
-                style={{ padding: "10px 20px" }}
-              >
-                Cancel
-              </button>
-              <button type="submit" className="btn primary" style={{ padding: "10px 24px" }}>
-                <Check size={16} /> Save Changes
-              </button>
-            </div>
-          </form>
-        </Modal>
+        <PackageEditorModal
+          mode="edit"
+          initialData={editItem}
+          onSave={handleSaveEdit}
+          onClose={() => setEditItem(null)}
+        />
       )}
 
       {/* =======================================================
