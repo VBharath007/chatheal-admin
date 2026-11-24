@@ -18,6 +18,8 @@ import {
   Video,
   Pencil,
   Sparkles,
+  Share2,
+  UserCheck,
 } from "lucide-react";
 import { api, demoUser, today, RecordData } from "@/lib/api";
 const imageHero = "/images/hero.jpg";
@@ -152,6 +154,13 @@ export function usePortalState(admin: boolean) {
     const timer = setTimeout(() => setNotice(""), 4000);
     return () => clearTimeout(timer);
   }, [notice]);
+  const [prescriptions, setPrescriptions] = useState<RecordData[]>([]);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("chatheal-client-prescriptions");
+      if (raw) setPrescriptions(JSON.parse(raw));
+    } catch {}
+  }, [modal, notice]);
   useEffect(() => {
     setMenu(false);
     setSearch("");
@@ -205,19 +214,42 @@ export function usePortalState(admin: boolean) {
   const cards = (items: RecordData[]) =>
     items.length ? (
       <div className="content-grid">
-        {items.map((c) => (
-          <article className="content-card reveal" key={c.id}>
-            <div className="card-image">
-              <img src={c.image} alt={c.title} loading="lazy" />
-              <span className={`image-tag tag-${(c.category || "").toLowerCase()}`}>{c.category}</span>
-              {admin && (
-                <span
-                  className={`lux-card-published-pill ${c.published ? "published" : "draft"}`}
-                >
-                  <span className="lux-pill-live-dot" />
-                  {c.published ? "Published" : "Draft"}
-                </span>
-              )}
+        {items.map((c) => {
+          const rxList = prescriptions.filter((p) => p.recipeId === c.id);
+          const clientRx =
+            !admin &&
+            prescriptions.find(
+              (p) =>
+                p.recipeId === c.id && p.clientId === (user?.id || "client"),
+            );
+          return (
+            <article className="content-card reveal" key={c.id}>
+              <div className="card-image">
+                <img src={c.image} alt={c.title} loading="lazy" />
+                <span className={`image-tag tag-${(c.category || "").toLowerCase()}`}>{c.category}</span>
+                {admin && (
+                  <span
+                    className={`lux-card-published-pill ${c.published ? "published" : "draft"}`}
+                  >
+                    <span className="lux-pill-live-dot" />
+                    {c.published ? "Published" : "Draft"}
+                  </span>
+                )}
+                {admin && rxList.length > 0 && (
+                  <span
+                    className="lux-card-rx-badge"
+                    title={`Prescribed to: ${rxList.map((x) => x.clientName).join(", ")}`}
+                  >
+                    <UserCheck size={10} />
+                    <span>Prescribed ({rxList.length})</span>
+                  </span>
+                )}
+                {!admin && clientRx && (
+                  <span className="lux-card-rx-badge client-rx">
+                    <Sparkles size={10} />
+                    <span>Prescribed ({clientRx.mealTarget})</span>
+                  </span>
+                )}
               <button
                 className={"save-btn " + (saved.includes(c.id) ? "saved" : "")}
                 aria-label={
@@ -282,6 +314,15 @@ export function usePortalState(admin: boolean) {
                         <ArrowUpRight size={13} />
                       </button>
                       <button
+                        className="lux-card-btn-share"
+                        aria-label={"Share " + c.title + " with client"}
+                        title={"Prescribe & share " + c.title + " with client"}
+                        onClick={() => open("shareRecipe", c)}
+                      >
+                        <Share2 size={12} />
+                        <span>Share</span>
+                      </button>
+                      <button
                         className="lux-card-btn-edit"
                         aria-label={"Edit " + c.title}
                         onClick={() => open("content", c)}
@@ -303,7 +344,8 @@ export function usePortalState(admin: boolean) {
               </div>
             </div>
           </article>
-        ))}
+        );
+      })}
       </div>
     ) : (
       <Empty

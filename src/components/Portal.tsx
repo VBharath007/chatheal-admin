@@ -38,6 +38,7 @@ import {
   CheckCircle2,
   Clock,
   Bell,
+  Share2,
 } from "lucide-react";
 import { api, demoUser } from "@/lib/api";
 const imageHero = "/images/hero.jpg";
@@ -68,6 +69,7 @@ const adminNav = [
 ] as const;
 import { usePortalState } from "./portal-state";
 import { PortalContext } from "./portal-context";
+import ShareRecipeModal from "./screens/ShareRecipeModal";
 export default function Portal({
   admin = false,
   children,
@@ -702,7 +704,17 @@ export default function Portal({
             {children}
           </main>
         </div>
-        {modal && (
+        {modal === "shareRecipe" && selected && (
+          <ShareRecipeModal
+            recipe={selected}
+            clients={clients}
+            onClose={() => setModal("")}
+            onPrescribeSuccess={(clientId, clientName, recipeTitle) => {
+              setNotice(`Prescribed "${recipeTitle}" to ${clientName} successfully!`);
+            }}
+          />
+        )}
+        {modal && modal !== "shareRecipe" && (
           <Modal
             eyebrow={
               ({
@@ -811,15 +823,37 @@ export default function Portal({
                     </ol>
                   </>
                 )}
-                <button
-                  className="btn secondary"
-                  onClick={() => toggleSaved(selected.id)}
-                >
-                  <Heart size={16} />
-                  {saved.includes(selected.id)
-                    ? "Saved to your collection"
-                    : "Save for later"}
-                </button>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "14px" }}>
+                  {admin && (
+                    <button
+                      type="button"
+                      className="btn primary"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        borderRadius: "999px",
+                        padding: "8px 18px",
+                        fontSize: "13px",
+                        fontWeight: 750,
+                        background: "linear-gradient(135deg, #00ab66 0%, #0265dc 100%)",
+                      }}
+                      onClick={() => open("shareRecipe", selected)}
+                    >
+                      <Share2 size={15} />
+                      <span>Prescribe &amp; Share with Client</span>
+                    </button>
+                  )}
+                  <button
+                    className="btn secondary"
+                    onClick={() => toggleSaved(selected.id)}
+                  >
+                    <Heart size={16} />
+                    {saved.includes(selected.id)
+                      ? "Saved to your collection"
+                      : "Save for later"}
+                  </button>
+                </div>
               </div>
             )}
             {modal === "food" && (
