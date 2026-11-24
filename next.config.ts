@@ -13,6 +13,9 @@ const config: NextConfig = {
   turbopack: {
     root: isMonorepo ? parentDir : path.resolve(__dirname),
   },
+  experimental: {
+    agentUpgrade: 'security',
+  } as any,
 };
 
 export default config;
