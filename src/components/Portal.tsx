@@ -555,7 +555,7 @@ export default function Portal({
               <div className="top-status-pill">
                 <span className="status-dot" />
                 <span className="top-status">
-                  {demo ? "Demo Sandbox" : "Cloud Sync Active"}
+                  Cloud Sync Active
                 </span>
               </div>
             </div>

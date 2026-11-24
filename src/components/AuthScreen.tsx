@@ -239,7 +239,7 @@ export default function AuthScreen({
             {forgotNotice && (
               <div className="lux-auth-alert-info" role="status">
                 <span>
-                  Demo credential: <strong>coach@example.com</strong> /{" "}
+                  Login credential: <strong>coach@example.com</strong> /{" "}
                   <strong>admin123</strong>
                 </span>
               </div>
@@ -266,7 +266,7 @@ export default function AuthScreen({
               }}
             >
               <Sparkles size={15} style={{ color: "#34d399" }} />
-              <span>Explore {admin ? "Coach" : "Client"} Demo Workspace</span>
+              <span>Enter {admin ? "Coach" : "Client"} Workspace</span>
             </button>
           </form>
 
