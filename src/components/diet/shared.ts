@@ -86,6 +86,7 @@ function seedDietDb() {
         id: "client",
         name: "Bharath",
         email: "client@chatheal.local",
+        active: 1,
         category_id: "cat-gut",
         category_name: "Gut Health & Hormone Balance",
       },
@@ -93,6 +94,7 @@ function seedDietDb() {
         id: "client2",
         name: "Priya Sharma",
         email: "priya@chatheal.local",
+        active: 1,
         category_id: "cat-weight",
         category_name: "Metabolic Weight Loss",
       },
@@ -393,7 +395,10 @@ function localDietRequest(path: string, method = "GET", body?: any): any {
   }
 
   if (p === "/members") {
-    return db.members;
+    return (db.members || []).map((m: any) => ({
+      ...m,
+      active: m.active ?? 1,
+    }));
   }
 
   if (p.startsWith("/members/") && method === "PUT") {

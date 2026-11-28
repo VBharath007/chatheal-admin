@@ -101,6 +101,7 @@ export default function DietScreen() {
     setCats(c);
     setMembers(m);
     setPlans(p);
+    setCategory((prev) => prev || c[0]?.id || "");
   }
 
   async function run(fn: () => Promise<void>) {
