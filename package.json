@@ -5,7 +5,8 @@
     "dev": "next dev -p 3002",
     "build": "next build --webpack",
     "start": "next start -p 3002",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "preview": "node scripts/preview.mjs 3002"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

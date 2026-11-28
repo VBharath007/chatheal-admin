@@ -16,10 +16,15 @@ import {
   Zap,
   Activity,
   Layers,
+  Copy,
+  Check,
+  ExternalLink,
+  Users,
 } from "lucide-react";
+import { useState } from "react";
 
 import { usePortal } from "../portal-context";
-import { Empty } from "../ui";
+import { Empty, WhatsAppIcon } from "../ui";
 
 const fmt = (s: string) =>
   new Date(s).toLocaleString("en-IN", {
@@ -35,12 +40,14 @@ export default function SessionsScreen() {
     admin,
     section,
     setError,
+    setNotice,
     sessions,
     setModal,
     setJoinUrl,
     call,
     open,
   } = usePortal();
+  const [copiedId, setCopiedId] = useState<string>("");
 
   return (
     <>
@@ -107,12 +114,17 @@ export default function SessionsScreen() {
 
           {/* Sessions Grid */}
           <div className="content-grid lux-sessions-grid">
-            {sessions.map((s) => (
+            {sessions.map((s) => {
+              const clientOrigin =
+                process.env.NEXT_PUBLIC_CLIENT_URL || "http://localhost:3000";
+              const shareLink =
+                s.meeting_url || `${clientOrigin}/sessions?session=${s.id}`;
+              return (
               <section className="panel live-card lux-session-card" key={s.id}>
                 <div className="lux-session-card-header">
                   <span className="lux-session-badge">
                     <span className="lux-session-dot" />
-                    TELEHEALTH ROOM
+                    {s.category_name ? s.category_name.toUpperCase() : "TELEHEALTH ROOM"}
                   </span>
                   <div className="lux-session-icon-wrap">
                     <Video size={17} />
@@ -130,7 +142,75 @@ export default function SessionsScreen() {
 
                 <div className="lux-session-duration-box">
                   <Clock size={14} />
-                  <span>{s.minutes} minutes allocated &bull; 1-on-1 Clinical Video</span>
+                  <span>
+                    {s.minutes} minutes allocated &bull;{" "}
+                    {s.category_name
+                      ? `${s.recipient_count || "All"} clients in ${s.category_name}`
+                      : "1-on-1 Clinical Video"}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    padding: "8px 12px",
+                    borderRadius: "10px",
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    marginBottom: "12px",
+                    fontSize: "12px",
+                    color: "#166534",
+                  }}
+                >
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      fontWeight: 600,
+                    }}
+                    title={shareLink}
+                  >
+                    {shareLink}
+                  </span>
+                  <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      title="Copy meeting link"
+                      style={{ padding: "4px 8px", fontSize: "11px", minHeight: "28px" }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(shareLink);
+                        setCopiedId(s.id);
+                        setNotice("Meeting link copied!");
+                        setTimeout(() => setCopiedId(""), 2000);
+                      }}
+                    >
+                      {copiedId === s.id ? <Check size={12} /> : <Copy size={12} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      style={{
+                        padding: "4px 8px",
+                        fontSize: "11px",
+                        minHeight: "28px",
+                        background: "#25d366",
+                        color: "#ffffff",
+                        borderColor: "transparent",
+                      }}
+                      title="Share meeting link on WhatsApp"
+                      onClick={() => {
+                        const msg = `Hi! Join our ChatHeal ${s.category_name || "Wellness"} Live Session: *${s.title}*\n🕒 ${fmt(s.starts_at)}\n🔗 Join here: ${shareLink}`;
+                        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+                      }}
+                    >
+                      <WhatsAppIcon size={13} fullColor={false} />
+                    </button>
+                  </div>
                 </div>
 
                 <button
@@ -140,22 +220,27 @@ export default function SessionsScreen() {
                       const result = await call(
                         "/live-sessions/" + s.id + "/join",
                       );
-                      setJoinUrl(result.url);
-                      setModal("join");
+                      if (result.external) {
+                        window.open(result.url, "_blank", "noopener,noreferrer");
+                      } else {
+                        setJoinUrl(result.url);
+                        open("join", s);
+                      }
                     } catch (e) {
                       setError((e as Error).message);
                     }
                   }}
                 >
                   <Camera size={16} />
-                  <span>Launch Video Room</span>
+                  <span>Launch Live Video Room</span>
                 </button>
 
                 <small className="lux-session-footer-note">
-                  Room opens 10 minutes prior to scheduled start time
+                  All clients in this category can join directly via the ChatHeal meeting link
                 </small>
               </section>
-            ))}
+              );
+            })}
           </div>
 
           {!sessions.length && (

@@ -5466,7 +5466,7 @@ body .lux-hero-btn {
 @media (min-width: 1025px) {
   body .lux-clients-stats-grid {
     display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 20px !important;
     margin-bottom: 26px !important;
   }
@@ -8413,16 +8413,60 @@ body.dark-mode .lux-donut-center-cals {
 
 .lux-macro-cards-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   flex: 1;
   min-width: 280px;
+}
+
+@media (max-width: 1100px) {
+  .lux-macro-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
   .lux-macro-cards-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.lux-timeframe-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  gap: 2px;
+}
+
+.lux-tf-btn {
+  border: none;
+  background: transparent;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.lux-tf-btn.active {
+  background: #ffffff;
+  color: #0d7261;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+}
+
+body.dark-mode .lux-timeframe-toggle {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(51, 65, 85, 0.8);
+}
+
+body.dark-mode .lux-tf-btn.active {
+  background: #0f172a;
+  color: #34d399;
 }
 
 .lux-macro-pill-card {
@@ -8463,6 +8507,25 @@ body.dark-mode .lux-macro-pill-card.carbs {
 body.dark-mode .lux-macro-pill-card.fat {
   background: rgba(245, 158, 11, 0.12) !important;
   border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+.lux-macro-pill-card.fiber {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.lux-macro-pill-card.fiber .lux-macro-name {
+  color: #6d28d9;
+}
+
+.lux-macro-pill-card.fiber .lux-macro-pct-badge {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+body.dark-mode .lux-macro-pill-card.fiber {
+  background: rgba(139, 92, 246, 0.12) !important;
+  border-color: rgba(167, 139, 250, 0.3) !important;
 }
 
 .lux-macro-label-row {
@@ -8727,23 +8790,48 @@ body.dark-mode .lux-btn-pdf-export {
 }
 
 @media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
   body * {
     visibility: hidden;
   }
-  .lux-printable-area, .lux-printable-area * {
+  .lux-print-backdrop {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+  .lux-printable-area,
+  .lux-printable-area * {
     visibility: visible;
   }
   .lux-printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 20px;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 8px 12px !important;
     box-shadow: none !important;
     border: none !important;
-    background: var(--surface-ffffff) !important;
-    color: var(--text-000000) !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .lux-print-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   .lux-no-print {
     display: none !important;

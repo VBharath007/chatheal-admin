@@ -1,0 +1,463 @@
+/* Scoped additions: the existing portal and diet layouts remain unchanged. */
+.care-workspace {
+  --care-ink: #173c34;
+  --care-muted: #587168;
+  --care-line: rgba(25, 105, 84, 0.17);
+  --care-surface: rgba(255, 255, 255, 0.94);
+  --care-soft: #f2f8f5;
+  --care-accent: #116c57;
+  color: var(--care-ink);
+  background: var(--care-surface);
+  border: 1px solid var(--care-line);
+  border-radius: 24px;
+  padding: clamp(16px, 3vw, 30px);
+  box-shadow: 0 14px 40px -24px #0a4b373b;
+  min-width: 0;
+  display: grid;
+  gap: 20px;
+  backdrop-filter: blur(18px);
+}
+.care-workspace * {
+  box-sizing: border-box;
+}
+.care-workspace .care-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border-bottom: 1px solid var(--care-line);
+  padding-bottom: 20px;
+}
+.care-workspace h3 {
+  color: var(--care-ink);
+  font-size: clamp(21px, 2.5vw, 28px);
+  letter-spacing: -0.035em;
+  margin: 10px 0;
+}
+.care-workspace h4 {
+  color: var(--care-ink);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+.care-workspace p {
+  color: var(--care-muted);
+  line-height: 1.6;
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+.care-workspace .care-eyebrow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--care-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.care-workspace .care-week {
+  background: var(--care-soft);
+  border: 1px solid var(--care-line);
+  border-radius: 18px;
+  padding: 14px;
+  font-size: 25px;
+  font-weight: 800;
+  text-align: center;
+  flex-shrink: 0;
+}
+.care-workspace small {
+  display: block;
+  color: var(--care-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+.care-workspace .care-toolbar,
+.care-workspace .care-actions {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.care-workspace .care-toolbar > label {
+  flex: 1;
+  min-width: 160px;
+}
+.care-workspace label {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--care-ink);
+  min-width: 0;
+}
+.care-workspace input,
+.care-workspace select,
+.care-workspace textarea {
+  background: var(--care-surface);
+  color: var(--care-ink);
+  border: 1px solid var(--care-line);
+  border-radius: 10px;
+  padding: 11px 12px;
+  width: 100%;
+  min-width: 0;
+  font-size: 14px;
+  min-height: 44px;
+  font-family: inherit;
+}
+.care-workspace input::placeholder,
+.care-workspace textarea::placeholder {
+  color: var(--care-muted);
+  opacity: 0.9;
+}
+.care-workspace textarea {
+  min-height: 95px;
+  resize: vertical;
+}
+.care-workspace button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--care-line);
+  background: var(--care-surface);
+  color: var(--care-accent);
+  border-radius: 11px;
+  padding: 11px 15px;
+  min-height: 44px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: normal;
+}
+.care-workspace button:hover:not(:disabled) {
+  background: var(--care-soft);
+  border-color: var(--care-accent);
+}
+.care-workspace button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.care-workspace .care-primary {
+  background: var(--care-accent);
+  color: #fff;
+  border-color: var(--care-accent);
+}
+.care-workspace .care-primary:hover:not(:disabled) {
+  background: #095643;
+  color: white;
+}
+.care-workspace :is(input, select, textarea, button, summary):focus-visible {
+  outline: 3px solid #6baf9c;
+  outline-offset: 3px;
+}
+.care-workspace .care-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px;
+  background: var(--care-soft);
+  border-radius: 15px;
+}
+.care-workspace .care-tabs button {
+  flex: 1;
+  background: transparent;
+  border-color: transparent;
+  color: #0d7261;
+  min-width: 125px;
+}
+.care-workspace .care-tabs button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: var(--care-line);
+  color: #094d40;
+  transform: none;
+}
+.care-workspace .care-tabs button[aria-pressed="true"],
+.care-workspace .care-tabs button[aria-pressed="true"]:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: var(--care-line);
+  color: #094d40;
+  box-shadow: 0 3px 10px rgba(18, 63, 48, 0.12);
+}
+.care-workspace .care-body {
+  display: grid;
+  gap: 18px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.care-workspace .care-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.care-workspace .care-nutrients {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.care-workspace .care-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.care-workspace .care-summary article {
+  padding: 16px 12px;
+  border: 1px solid var(--care-line);
+  border-radius: 16px;
+  background: linear-gradient(145deg, var(--care-soft), var(--care-surface));
+  display: grid;
+  gap: 6px;
+}
+.care-workspace .care-summary span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--care-muted);
+}
+.care-workspace .care-summary strong {
+  font-size: 26px;
+  letter-spacing: -0.04em;
+  color: var(--care-ink);
+}
+.care-workspace .care-summary b {
+  font-size: 11px;
+  color: var(--care-accent);
+}
+.care-workspace .care-summary .care-over {
+  color: #a65b20;
+}
+.care-workspace .care-section-head,
+.care-workspace .care-food-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.care-workspace .care-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--care-accent);
+  background: var(--care-soft);
+  border: 1px solid var(--care-line);
+  border-radius: 30px;
+  padding: 5px 10px;
+}
+.care-workspace .care-foods {
+  display: grid;
+  gap: 14px;
+}
+.care-workspace .care-food {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--care-line);
+  border-radius: 17px;
+  padding: 18px;
+  background: var(--care-soft);
+}
+.care-workspace .care-food-top button {
+  padding: 7px;
+  min-height: 36px;
+}
+.care-workspace .care-muted {
+  font-size: 12px;
+  color: var(--care-muted);
+  line-height: 1.6;
+}
+.care-workspace .care-empty {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 35px 15px;
+  color: var(--care-muted);
+  background: var(--care-soft);
+  border: 1px dashed var(--care-line);
+  border-radius: 16px;
+}
+.care-workspace .care-details {
+  border: 1px solid var(--care-line);
+  border-radius: 14px;
+  padding: 16px;
+}
+.care-workspace summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--care-ink);
+  min-height: 28px;
+}
+.care-workspace .care-details[open] > :not(summary) {
+  margin-top: 14px;
+}
+.care-workspace .care-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--care-line);
+  border-radius: 12px;
+  background: var(--care-soft);
+}
+.care-workspace .care-check input {
+  width: 19px;
+  height: 19px;
+  min-height: 19px;
+  flex: 0 0 19px;
+  accent-color: var(--care-accent);
+  margin: 2px 0;
+}
+.care-workspace .care-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.care-workspace .care-documents {
+  display: grid;
+  gap: 10px;
+}
+.care-workspace .care-documents article {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid var(--care-line);
+  border-radius: 13px;
+}
+.care-workspace .care-documents article > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.care-workspace .care-documents strong {
+  font-size: 13px;
+}
+.care-workspace .care-history {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.care-workspace .care-history article {
+  padding: 12px;
+  background: var(--care-soft);
+  border: 1px solid var(--care-line);
+  border-radius: 12px;
+  font-size: 13px;
+}
+.care-workspace .care-alert,
+.care-workspace .care-success {
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.care-workspace .care-alert {
+  background: #fff1f0;
+  color: #922f2b;
+}
+.care-workspace .care-success {
+  background: var(--care-soft);
+  color: var(--care-accent);
+}
+.care-workspace .care-table-scroll {
+  overflow: auto;
+  max-width: 100%;
+  border: 1px solid var(--care-line);
+  border-radius: 14px;
+}
+.care-workspace table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.care-workspace th,
+.care-workspace td {
+  text-align: left;
+  padding: 13px;
+  border-bottom: 1px solid var(--care-line);
+  background: transparent;
+  color: var(--care-ink);
+}
+.care-workspace th {
+  background: var(--care-soft);
+  font-size: 11px;
+}
+.care-workspace .care-note {
+  background: var(--care-soft);
+  padding: 16px;
+  border-left: 3px solid var(--care-accent);
+  border-radius: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+[data-theme="dark"] .care-workspace {
+  --care-ink: #e2f1eb;
+  --care-muted: #a9c1b6;
+  --care-line: rgba(161, 211, 190, 0.18);
+  --care-surface: #172c26;
+  --care-soft: #20382f;
+  --care-accent: #8bd9ba;
+  color-scheme: dark;
+}
+[data-theme="dark"] .care-workspace .care-primary {
+  background: #24735b;
+  color: #fff;
+  border-color: #3c9778;
+}
+[data-theme="dark"] .care-workspace .care-alert {
+  background: #402b2c;
+  color: #ffd2ce;
+}
+[data-theme="dark"] .care-workspace .care-over {
+  color: #ffc58f;
+}
+@media (max-width: 850px) {
+  .care-workspace .care-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .care-workspace .care-nutrients {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .care-workspace .care-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .care-workspace .care-grid,
+  .care-workspace .care-checklist {
+    grid-template-columns: 1fr;
+  }
+  .care-workspace .care-summary,
+  .care-workspace .care-nutrients {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .care-workspace .care-heading {
+    align-items: flex-start;
+  }
+  .care-workspace .care-week {
+    padding: 9px;
+    font-size: 20px;
+  }
+  .care-workspace .care-food {
+    padding: 12px;
+  }
+  .care-workspace .care-tabs button {
+    min-width: 105px;
+    font-size: 11px;
+  }
+  .care-workspace .care-actions button {
+    width: 100%;
+  }
+  .care-workspace .care-section-head {
+    align-items: flex-start;
+  }
+  .care-workspace .care-summary strong {
+    font-size: 22px;
+  }
+}

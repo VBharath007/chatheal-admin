@@ -74,12 +74,14 @@ export function Modal({
   maxWidth?: string | number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(close);
+  closeRef.current = close;
 
   useEffect(() => {
     const old = document.activeElement as HTMLElement;
     ref.current?.focus();
     const listener = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") closeRef.current();
       if (e.key === "Tab") {
         const nodes = ref.current?.querySelectorAll<HTMLElement>(
           'button,input,select,textarea,a[href],[tabindex="0"]',
@@ -104,7 +106,7 @@ export function Modal({
       document.body.style.overflow = overflow;
       old?.focus();
     };
-  }, [close]);
+  }, []);
 
   return (
     <div className={`modal-backdrop ${className ? `${className}-backdrop` : ""}`.trim()} onClick={close} role="presentation">
@@ -142,22 +144,38 @@ export function Modal({
 export function Chart({
   data,
   goal = 2000,
+  selectedDate,
+  onSelectDate,
 }: {
   data: RecordData[];
   goal?: number;
+  selectedDate?: string;
+  onSelectDate?: (date: string) => void;
 }) {
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - 6 + i);
-    const dateStr = d.toLocaleDateString("en-CA");
-    const val = data.find((x) => x.date === dateStr)?.calories || 0;
-    return {
-      date: dateStr,
-      label: d.toLocaleDateString("en", { weekday: "short" }),
-      value: val,
-      percent: Math.round((val / goal) * 100),
-    };
-  });
+  const days =
+    data.length === 7 && data.every((x) => x.date)
+      ? data.map((x) => {
+          const d = new Date(x.date + "T00:00:00");
+          const val = x.calories || 0;
+          return {
+            date: x.date,
+            label: d.toLocaleDateString("en", { weekday: "short" }),
+            value: val,
+            percent: Math.round((val / goal) * 100),
+          };
+        })
+      : Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - 6 + i);
+          const dateStr = d.toLocaleDateString("en-CA");
+          const val = data.find((x) => x.date === dateStr)?.calories || 0;
+          return {
+            date: dateStr,
+            label: d.toLocaleDateString("en", { weekday: "short" }),
+            value: val,
+            percent: Math.round((val / goal) * 100),
+          };
+        });
 
   const max = Math.max(goal, ...days.map((d) => d.value), 1) * 1.18;
 
@@ -181,10 +199,32 @@ export function Chart({
         </span>
       </div>
       {days.map((d, i) => {
-        const isCurrent = i === 6;
+        const isCurrent = selectedDate ? d.date === selectedDate : i === 6;
         const heightPercent = Math.max(4, Math.min(100, (d.value / max) * 100));
         return (
-          <div className="bar-group" key={d.date}>
+          <div
+            className="bar-group"
+            key={d.date}
+            onClick={onSelectDate ? () => onSelectDate(d.date) : undefined}
+            role={onSelectDate ? "button" : undefined}
+            tabIndex={onSelectDate ? 0 : undefined}
+            onKeyDown={
+              onSelectDate
+                ? (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelectDate(d.date);
+                    }
+                  }
+                : undefined
+            }
+            style={onSelectDate ? { cursor: "pointer" } : undefined}
+            title={
+              onSelectDate
+                ? `Click to inspect ${d.label} (${d.date}): ${number(d.value)} kcal`
+                : undefined
+            }
+          >
             <span
               className="bar-value"
               style={{

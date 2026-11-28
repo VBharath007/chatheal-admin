@@ -61,6 +61,7 @@ const userNav = [
 const adminNav = [
   ["Overview", "/", LayoutDashboard],
   ["Clients", "/clients", Users],
+  ["Diet studio", "/diet", Utensils],
   ["Content library", "/discover", BookOpen],
   ["Package studio", "/packages", Sparkles],
   ["Appointments", "/appointments", CalendarDays],
@@ -70,6 +71,7 @@ const adminNav = [
 import { usePortalState } from "./portal-state";
 import { PortalContext } from "./portal-context";
 import ShareRecipeModal from "./screens/ShareRecipeModal";
+import LiveMeetingRoom from "./LiveMeetingRoom";
 export default function Portal({
   admin = false,
   children,
@@ -154,40 +156,56 @@ export default function Portal({
   } = state;
 
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: "n1",
-      title: "Bharath logged breakfast",
-      detail: "Avocado sourdough toast & poached eggs (420 kcal)",
-      time: "2m ago",
-      type: "meal" as const,
-      read: false,
-    },
-    {
-      id: "n2",
-      title: "Priya Sharma confirmed booking",
-      detail: "1-on-1 Health Review • Tomorrow at 10:00 AM",
-      time: "14m ago",
-      type: "appointment" as const,
-      read: false,
-    },
-    {
-      id: "n3",
-      title: "Adherence Milestone Achieved",
-      detail: "Karthik Raman reached 94% weekly caloric compliance!",
-      time: "1h ago",
-      type: "goal" as const,
-      read: false,
-    },
-    {
-      id: "n4",
-      title: "Telehealth Room Ready",
-      detail: "HD encrypted video consulting suite is live.",
-      time: "2h ago",
+  const [dietCategories, setDietCategories] = useState<{ id: string; name: string; member_count: number }[]>([]);
+  useEffect(() => {
+    if (!admin || demo || !user) return;
+    fetch((process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api") + "/diet/categories", {
+      credentials: "include",
+      headers: { "X-Portal": "admin" },
+    })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => {
+        if (Array.isArray(d)) setDietCategories(d);
+      })
+      .catch(() => {});
+  }, [admin, demo, user, modal]);
+  const [readNotifIds, setReadNotifIds] = useState<string[]>([]);
+  const notifications: {
+    id: string;
+    title: string;
+    detail: string;
+    time: string;
+    type: "meal" | "appointment" | "goal" | "system";
+    read: boolean;
+  }[] = [
+    ...appointments
+      .filter((a) => a.status === "confirmed")
+      .slice(0, 3)
+      .map((a) => ({
+        id: "appt-" + a.id,
+        title: `${a.name || "Client"} booked consultation`,
+        detail: `${a.note || "1-on-1 Health Review"} • ${fmt(a.starts_at)}`,
+        time: "Scheduled",
+        type: "appointment" as const,
+        read: readNotifIds.includes("appt-" + a.id),
+      })),
+    ...sessions.slice(0, 3).map((s) => ({
+      id: "sess-" + s.id,
+      title: `Live Session: ${s.title}`,
+      detail: `${s.category_name ? s.category_name + " • " : ""}${fmt(s.starts_at)}`,
+      time: `${s.minutes} min`,
       type: "system" as const,
-      read: true,
-    },
-  ]);
+      read: readNotifIds.includes("sess-" + s.id),
+    })),
+    ...logs.slice(0, 2).map((l) => ({
+      id: "log-" + l.id,
+      title: `Logged ${l.name}`,
+      detail: `${l.meal} • ${Math.round(l.calories || 0)} kcal`,
+      time: l.date,
+      type: "meal" as const,
+      read: readNotifIds.includes("log-" + l.id),
+    })),
+  ];
 
 
   useEffect(() => {
@@ -220,7 +238,7 @@ export default function Portal({
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setReadNotifIds(notifications.map((n) => n.id));
   };
   if (!ready)
     return (
@@ -314,8 +332,8 @@ export default function Portal({
                             key={item.id}
                             className={`lux-notif-item ${!item.read ? "unread" : ""}`}
                             onClick={() => {
-                              setNotifications((prev) =>
-                                prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+                              setReadNotifIds((prev) =>
+                                prev.includes(item.id) ? prev : [...prev, item.id],
                               );
                             }}
                           >
@@ -621,6 +639,8 @@ export default function Portal({
                           <span className="lux-brand-blue">you’ve come.</span>
                         </>
                       )
+                    ) : section === "diet" ? (
+                      <>Weekly plans. Daily connection.</>
                     ) : section === "settings" ? (
                       <>
                         <span className="lux-brand-green">A workspace</span>{" "}
@@ -633,6 +653,7 @@ export default function Portal({
                   <p>
                     {(
                       {
+                        diet: "Publish category plans and review daily food reports.",
                         clients:
                           "Manage client profiles, adjust daily caloric targets, and review personalized care.",
                         discover:
@@ -714,7 +735,7 @@ export default function Portal({
             }}
           />
         )}
-        {modal && modal !== "shareRecipe" && (
+        {modal && modal !== "shareRecipe" && modal !== "join" && (
           <Modal
             eyebrow={
               ({
@@ -1193,25 +1214,124 @@ export default function Portal({
                         <input
                           required
                           minLength={3}
+                          placeholder="e.g. Weekly Weight & Stubborn Fat Q&A"
+                          value={form.title || ""}
                           onChange={(e) => update("title", e.target.value)}
                         />
                       </Field>
-                      <Field label="Client">
-                        <select
-                          required
-                          value={form.client_id || ""}
-                          onChange={(e) => update("client_id", e.target.value)}
-                        >
-                          <option value="">Choose client</option>
-                          {clients
-                            .filter((c) => c.active)
-                            .map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
-                        </select>
+
+                      <Field label="Audience">
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                          <button
+                            type="button"
+                            className={`btn ${(form.audience_mode || "category") === "category" ? "primary" : "secondary"}`}
+                            style={{ padding: "8px 12px", fontSize: "12.5px" }}
+                            onClick={() => {
+                              update("audience_mode", "category");
+                              update("client_id", "");
+                            }}
+                          >
+                            By Category (Group)
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn ${form.audience_mode === "client" ? "primary" : "secondary"}`}
+                            style={{ padding: "8px 12px", fontSize: "12.5px" }}
+                            onClick={() => {
+                              update("audience_mode", "client");
+                              update("category_id", "");
+                              update("category_name", "");
+                            }}
+                          >
+                            Single Client (1-on-1)
+                          </button>
+                        </div>
                       </Field>
+
+                      {(form.audience_mode || "category") === "category" ? (
+                        <Field
+                          label="Category"
+                          hint="All active clients in this category receive the meeting link"
+                        >
+                          <select
+                            required
+                            value={form.category_id || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const label =
+                                e.target.options[e.target.selectedIndex]?.getAttribute("data-name") || "";
+                              update("category_id", val);
+                              update("category_name", label);
+                            }}
+                          >
+                            <option value="">Choose category</option>
+                            <optgroup label="Diet Studio Categories">
+                              {dietCategories.map((c) => (
+                                <option key={c.id} value={c.id} data-name={c.name}>
+                                  {c.name} ({c.member_count} clients)
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Health Background Categories">
+                              {[
+                                "PCOD / PCOS",
+                                "Thyroid Imbalance",
+                                "Diabetes / Blood Sugar",
+                                "Cholesterol / Heart",
+                                "Fatty Liver",
+                                "Weight & Stubborn Fat",
+                                "Gut Health & Bloating",
+                                "Fatigue / Low Energy",
+                                "Hair Fall & Skin Concerns",
+                                "Hypertension / BP",
+                                "None / General Vitality",
+                                "Other Condition",
+                              ].map((h) => (
+                                <option key={h} value={"health:" + h} data-name={h}>
+                                  {h}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <option value="all" data-name="All Active Clients">
+                              All Active Clients ({clients.filter((c) => c.active).length})
+                            </option>
+                          </select>
+                        </Field>
+                      ) : (
+                        <Field label="Client">
+                          <select
+                            required
+                            value={form.client_id || ""}
+                            onChange={(e) => update("client_id", e.target.value)}
+                          >
+                            <option value="">Choose client</option>
+                            {clients
+                              .filter((c) => c.active)
+                              .map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name}
+                                </option>
+                              ))}
+                          </select>
+                        </Field>
+                      )}
+
+                      <div
+                        style={{
+                          padding: "10px 14px",
+                          borderRadius: "12px",
+                          background: "#f0fdf4",
+                          border: "1px solid #bbf7d0",
+                          fontSize: "12.5px",
+                          color: "#166534",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        <strong>Auto-Generated ChatHeal Meeting Link:</strong> A
+                        unique in-app video room link (like Google Meet) will be
+                        created automatically and shared with everyone in this
+                        category.
+                      </div>
                     </>
                   )}
                   {["slot", "live"].includes(modal) && (
@@ -1399,15 +1519,15 @@ export default function Portal({
                 </div>
               </div>
             )}
-            {modal === "join" && (
-              <iframe
-                className="meeting-frame"
-                title="Live wellness session"
-                src={joinUrl}
-                allow="camera; microphone; fullscreen; display-capture"
-              />
-            )}
           </Modal>
+        )}
+        {modal === "join" && (
+          <LiveMeetingRoom
+            session={selected}
+            userName={user.name}
+            isAdmin={admin}
+            onLeave={() => setModal("")}
+          />
         )}
       </div>
     </PortalContext.Provider>

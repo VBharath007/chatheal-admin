@@ -42,6 +42,7 @@ const userNav = [
 const adminNav = [
   ["Overview", "/", LayoutDashboard],
   ["Clients", "/clients", Users],
+  ["Diet studio", "/diet", Utensils],
   ["Content library", "/discover", BookOpen],
   ["Package studio", "/packages", Sparkles],
   ["Appointments", "/appointments", CalendarDays],
@@ -85,19 +86,28 @@ export function usePortalState(admin: boolean) {
     api(p, m, b, demo, admin);
   useEffect(() => {
     const mode = sessionStorage.getItem(key);
-    if (mode === "demo") {
-      setDemo(true);
-      setUser(demoUser(admin));
-      setReady(true);
-    } else {
-      setReady(true);
-      api("/auth/me")
-        .then((u) => {
-          if ((u.role === "admin") === admin) setUser(u);
-        })
-        .catch(() => {})
-        .finally(() => setReady(true));
-    }
+    setReady(false);
+    api("/auth/session")
+      .then((res) => {
+        const u = res?.user;
+        if (u && (u.role === "admin") === admin) {
+          sessionStorage.removeItem(key);
+          setDemo(false);
+          setUser(u);
+        } else if (mode === "demo") {
+          setDemo(true);
+          setUser(demoUser(admin));
+        } else {
+          setUser(null);
+        }
+      })
+      .catch(() => {
+        if (mode === "demo") {
+          setDemo(true);
+          setUser(demoUser(admin));
+        }
+      })
+      .finally(() => setReady(true));
     setSaved(JSON.parse(localStorage.getItem(key + "-saved") || "[]"));
   }, []);
   async function refresh() {

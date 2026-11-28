@@ -109,7 +109,7 @@ export async function api(
         method,
         signal: AbortSignal.timeout(8000),
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Portal": "admin" },
         body: body ? JSON.stringify(body) : undefined,
       },
     );
@@ -253,12 +253,17 @@ export async function api(
       name: db.users.find((u: RecordData) => u.id === a.user_id)?.name,
     }));
   } else if (type === "live-sessions") {
-    if (action === "join")
-      throw new Error(
-        "Demo session: connect an approved live-video provider in the backend to join.",
-      );
-    if (method === "POST") db.live.push({ ...body, id: newId() });
-    result = db.live;
+    if (action === "join") {
+      const s = db.live.find((x: RecordData) => x.id === id);
+      const room = s?.room || "chatheal-live-" + (id || "room");
+      result = {
+        url: s?.meeting_url || "https://meet.jit.si/" + room,
+        external: !!s?.meeting_url,
+      };
+    } else {
+      if (method === "POST") db.live.push({ ...body, id: newId() });
+      result = db.live;
+    }
   }
   localStorage.setItem(key, JSON.stringify(db));
   return result;

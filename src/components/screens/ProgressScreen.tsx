@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -24,6 +24,7 @@ import {
 import { usePortal } from "../portal-context";
 import { Chart, Empty } from "../ui";
 import { today } from "@/lib/api";
+import { request as dietRequest } from "../diet/shared";
 
 const fmt = (s: string) =>
   new Date(s).toLocaleString("en-IN", {
@@ -38,6 +39,7 @@ const number = (n: number) => Math.round(n || 0).toLocaleString("en-IN");
 export default function ProgressScreen() {
   const {
     admin,
+    demo,
     section,
     logs,
     progress,
@@ -57,15 +59,159 @@ export default function ProgressScreen() {
   const selectedClient = clients.find((c) => c.id === target);
   const nextAppointment = appointments.find((a) => a.status === "confirmed");
   const [showReport, setShowReport] = useState(false);
+  const [timeframe, setTimeframe] = useState<"today" | "week">("today");
+  const [selectedDay, setSelectedDay] = useState<string>("");
+  const [dietAnalytics, setDietAnalytics] = useState<{
+    date: string;
+    today: {
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+      fiber: number;
+      hasReport: boolean;
+      submitted: boolean;
+    };
+    week: {
+      days: {
+        date: string;
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+        fiber: number;
+        hasReport: boolean;
+      }[];
+      totals: {
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+        fiber: number;
+      };
+      averages: {
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+        fiber: number;
+      };
+      activeDays: number;
+    };
+  } | null>(null);
+
+  useEffect(() => {
+    setSelectedDay("");
+    if (demo) {
+      setDietAnalytics(null);
+      return;
+    }
+    if (admin && !target) {
+      setDietAnalytics(null);
+      return;
+    }
+    let active = true;
+    const qs =
+      "?date=" +
+      encodeURIComponent(date || today()) +
+      (admin && target ? "&user_id=" + encodeURIComponent(target) : "");
+    dietRequest("/analytics" + qs)
+      .then((res) => {
+        if (active) setDietAnalytics(res);
+      })
+      .catch(() => {
+        if (active) setDietAnalytics(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [demo, admin, target, date]);
 
   const proteinEntry = nutrients.find((n) => n.name === "protein")?.value || 0;
   const carbsEntry = nutrients.find((n) => n.name === "carbs")?.value || 0;
   const fatEntry = nutrients.find((n) => n.name === "fat")?.value || 0;
 
-  // Use recorded macros if available, otherwise calculate clinically balanced breakdown based on daily caloric target
-  const proteinGrams = Math.round(proteinEntry || (goal * 0.25) / 4);
-  const carbsGrams = Math.round(carbsEntry || (goal * 0.50) / 4);
-  const fatGrams = Math.round(fatEntry || (goal * 0.25) / 9);
+  const chartData =
+    dietAnalytics?.week?.days?.length
+      ? dietAnalytics.week.days.map((d) => ({
+          date: d.date,
+          calories: d.calories,
+        }))
+      : progress;
+
+  const selectedDayData = selectedDay
+    ? dietAnalytics?.week?.days?.find((d) => d.date === selectedDay)
+    : undefined;
+
+  const demoDayCalories = selectedDay
+    ? progress.find((p) => p.date === selectedDay)?.calories ?? total
+    : total;
+
+  const activeCalories =
+    timeframe === "today"
+      ? selectedDayData
+        ? selectedDayData.calories
+        : dietAnalytics && !selectedDay
+          ? dietAnalytics.today.calories
+          : demoDayCalories
+      : dietAnalytics
+        ? dietAnalytics.week.totals.calories
+        : progress.reduce((s, p) => s + (p.calories || 0), 0);
+
+  const avgDailyCalories =
+    dietAnalytics
+      ? dietAnalytics.week.averages.calories
+      : Math.round(
+          progress.reduce((s, p) => s + (p.calories || 0), 0) /
+            (progress.length || 1),
+        );
+
+  const ratioScale =
+    selectedDay && !selectedDayData && total > 0 ? demoDayCalories / total : 1;
+
+  const proteinGrams =
+    timeframe === "today"
+      ? selectedDayData
+        ? selectedDayData.protein
+        : dietAnalytics && !selectedDay
+          ? dietAnalytics.today.protein
+          : Math.round(proteinEntry * ratioScale)
+      : dietAnalytics
+        ? dietAnalytics.week.totals.protein
+        : Math.round(proteinEntry);
+
+  const carbsGrams =
+    timeframe === "today"
+      ? selectedDayData
+        ? selectedDayData.carbs
+        : dietAnalytics && !selectedDay
+          ? dietAnalytics.today.carbs
+          : Math.round(carbsEntry * ratioScale)
+      : dietAnalytics
+        ? dietAnalytics.week.totals.carbs
+        : Math.round(carbsEntry);
+
+  const fatGrams =
+    timeframe === "today"
+      ? selectedDayData
+        ? selectedDayData.fat
+        : dietAnalytics && !selectedDay
+          ? dietAnalytics.today.fat
+          : Math.round(fatEntry * ratioScale)
+      : dietAnalytics
+        ? dietAnalytics.week.totals.fat
+        : Math.round(fatEntry);
+
+  const fiberGrams =
+    timeframe === "today"
+      ? selectedDayData
+        ? selectedDayData.fiber
+        : dietAnalytics && !selectedDay
+          ? dietAnalytics.today.fiber
+          : 0
+      : dietAnalytics
+        ? dietAnalytics.week.totals.fiber
+        : 0;
 
   return (
     <>
@@ -293,30 +439,59 @@ export default function ProgressScreen() {
           {/* 7-Day Longitudinal Chart & Next Session Widget */}
           <div className="dashboard-columns">
             <section className="panel chart-panel">
-              <div className="section-heading">
+              <div className="section-heading" style={{ flexWrap: "wrap", gap: "12px" }}>
                 <div>
-                  <span className="eyebrow">7-DAY LONGITUDINAL TREND</span>
+                  <span className="eyebrow">
+                    {timeframe === "today"
+                      ? `DAILY & 7-DAY DIET STUDIO SYNC · ${date}`
+                      : "7-DAY LONGITUDINAL TREND"}
+                  </span>
                   <h2>
                     {admin
                       ? "Client Caloric Intake Overview"
                       : "Your Week in Balance"}
                   </h2>
                 </div>
-                <span className="pill">Daily Target: {number(goal)} kcal</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <input
+                    type="date"
+                    aria-label="Inspect date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value || today())}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: "10px",
+                      border: "1.5px solid var(--line)",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      background: "var(--surface-ffffff)",
+                      color: "var(--ink)",
+                    }}
+                  />
+                  <span className="pill">Daily Target: {number(goal)} kcal</span>
+                </div>
               </div>
 
               {admin && !target ? (
                 <Empty
                   title="Choose a patient from the list"
-                  text="Select any enrolled client to review their 7-day intake chart and meal log breakdown."
+                  text="Select any enrolled client to review their 7-day intake chart and Diet Studio macro breakdown."
                   icon={<Users size={28} />}
                 />
               ) : (
-                <Chart data={progress} goal={goal} />
+                <Chart
+                  data={chartData}
+                  goal={goal}
+                  selectedDate={timeframe === "today" ? selectedDay || date : undefined}
+                  onSelectDate={(d) => {
+                    setSelectedDay(d);
+                    setTimeframe("today");
+                  }}
+                />
               )}
 
               <p className="chart-caption">
-                <span className="legend-dot" /> Daily Calories Logged{" "}
+                <span className="legend-dot" /> Daily Calories Logged (Diet Studio + Food Diary){" "}
                 <span className="legend-line" /> Prescribed Intake Goal (missing
                 days displayed as zero)
               </p>
@@ -380,14 +555,29 @@ export default function ProgressScreen() {
             </section>
           </div>
 
-          {/* Feature 1: Macro Donut Chart (Protein/Carb/Fat) */}
+          {/* Feature 1: Macro Donut Chart (Protein/Carb/Fat/Fiber) */}
           {(!admin || target) && (
             <MacroDonutChart
               proteinGrams={proteinGrams}
               carbsGrams={carbsGrams}
               fatGrams={fatGrams}
-              totalKcal={total}
+              fiberGrams={fiberGrams}
+              totalKcal={activeCalories}
+              avgDailyKcal={avgDailyCalories}
               goalKcal={goal}
+              timeframe={timeframe}
+              selectedDay={selectedDay}
+              onTimeframeChange={(t) => {
+                setSelectedDay("");
+                setTimeframe(t);
+              }}
+              hasDietReport={
+                timeframe === "today"
+                  ? selectedDayData
+                    ? !!selectedDayData.hasReport
+                    : !!dietAnalytics?.today?.hasReport
+                  : (dietAnalytics?.week?.activeDays || 0) > 0
+              }
             />
           )}
 
@@ -415,23 +605,35 @@ function MacroDonutChart({
   proteinGrams,
   carbsGrams,
   fatGrams,
+  fiberGrams,
   totalKcal,
+  avgDailyKcal,
   goalKcal,
+  timeframe,
+  selectedDay,
+  onTimeframeChange,
+  hasDietReport,
 }: {
   proteinGrams: number;
   carbsGrams: number;
   fatGrams: number;
+  fiberGrams: number;
   totalKcal: number;
+  avgDailyKcal: number;
   goalKcal: number;
+  timeframe: "today" | "week";
+  selectedDay?: string;
+  onTimeframeChange: (t: "today" | "week") => void;
+  hasDietReport: boolean;
 }) {
   const proteinKcal = Math.round(proteinGrams * 4);
   const carbsKcal = Math.round(carbsGrams * 4);
   const fatKcal = Math.round(fatGrams * 9);
-  const macroTotalKcal = proteinKcal + carbsKcal + fatKcal || 1;
+  const macroTotalKcal = proteinKcal + carbsKcal + fatKcal;
 
-  const proteinPct = Math.round((proteinKcal / macroTotalKcal) * 100);
-  const carbsPct = Math.round((carbsKcal / macroTotalKcal) * 100);
-  const fatPct = Math.max(0, 100 - proteinPct - carbsPct);
+  const proteinPct = macroTotalKcal ? Math.round((proteinKcal / macroTotalKcal) * 100) : 0;
+  const carbsPct = macroTotalKcal ? Math.round((carbsKcal / macroTotalKcal) * 100) : 0;
+  const fatPct = macroTotalKcal ? Math.max(0, 100 - proteinPct - carbsPct) : 0;
 
   // SVG Donut calculation: radius 58, circumference = 2 * PI * 58 ≈ 364.42
   const r = 58;
@@ -445,6 +647,14 @@ function MacroDonutChart({
   const carbsOffset = -proteinLen;
   const fatOffset = -(proteinLen + carbsLen);
 
+  const isWeek = timeframe === "week";
+  const multiplier = isWeek ? 7 : 1;
+  const proteinTarget = Math.round(((goalKcal * 0.25) / 4) * multiplier);
+  const carbsTarget = Math.round(((goalKcal * 0.5) / 4) * multiplier);
+  const fatTarget = Math.round(((goalKcal * 0.25) / 9) * multiplier);
+  const fiberTarget = 28 * multiplier;
+  const fiberPct = Math.min(100, Math.round((fiberGrams / (fiberTarget || 1)) * 100));
+
   return (
     <div className="lux-macro-donut-card">
       <div
@@ -453,7 +663,7 @@ function MacroDonutChart({
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "10px",
+          gap: "12px",
         }}
       >
         <div>
@@ -466,32 +676,64 @@ function MacroDonutChart({
               letterSpacing: "0.5px",
             }}
           >
-            DAILY MACRONUTRIENT RATIO
+            {isWeek ? "WEEKLY MACRONUTRIENT & FIBER TOTALS" : "DAILY MACRONUTRIENT & FIBER RATIO"}
           </span>
-          <h3
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginTop: "4px" }}>
+            <h3
+              style={{
+                fontSize: "18px",
+                margin: 0,
+                color: "var(--ink)",
+                fontWeight: 700,
+              }}
+            >
+              Macronutrient Balance Split
+            </h3>
+            <span
+              className="pill"
+              style={{
+                fontSize: "10.5px",
+                padding: "3px 9px",
+                background: hasDietReport ? "#ecfdf5" : "#f8fafc",
+                color: hasDietReport ? "#047857" : "#64748b",
+              }}
+            >
+              {hasDietReport ? "● Live Diet Studio Sync" : "No Diet Studio Log Yet"}
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <div className="lux-timeframe-toggle" role="group" aria-label="Macro timeframe">
+            <button
+              type="button"
+              className={`lux-tf-btn ${timeframe === "today" ? "active" : ""}`}
+              onClick={() => onTimeframeChange("today")}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              className={`lux-tf-btn ${timeframe === "week" ? "active" : ""}`}
+              onClick={() => onTimeframeChange("week")}
+            >
+              This Week (7d)
+            </button>
+          </div>
+          <span
             style={{
-              fontSize: "18px",
-              margin: "4px 0 0",
-              color: "var(--ink)",
+              fontSize: "12px",
+              background: "var(--surface-eff6ff)",
+              color: "var(--text-0284c7)",
               fontWeight: 700,
+              padding: "5px 11px",
+              borderRadius: "999px",
+              border: "1px solid var(--border-bfdbfe)",
             }}
           >
-            Macronutrient Balance Split
-          </h3>
+            Target: 25% Pro • 50% Carb • 25% Fat • {fiberTarget}g Fiber
+          </span>
         </div>
-        <span
-          style={{
-            fontSize: "12px",
-            background: "var(--surface-eff6ff)",
-            color: "var(--text-0284c7)",
-            fontWeight: 700,
-            padding: "4px 10px",
-            borderRadius: "999px",
-            border: "1px solid var(--border-bfdbfe)",
-          }}
-        >
-          Target: 25% Pro • 50% Carb • 25% Fat
-        </span>
       </div>
 
       <div className="lux-macro-chart-row">
@@ -506,52 +748,62 @@ function MacroDonutChart({
               stroke="#e2e8f0"
               strokeWidth="18"
             />
-            {/* Protein Arc (Emerald) */}
-            <circle
-              cx="80"
-              cy="80"
-              r={r}
-              fill="transparent"
-              stroke="#10b981"
-              strokeWidth="18"
-              strokeDasharray={`${proteinLen} ${c - proteinLen}`}
-              strokeDashoffset={proteinOffset}
-              strokeLinecap="round"
-            />
-            {/* Carbs Arc (Sky Blue) */}
-            <circle
-              cx="80"
-              cy="80"
-              r={r}
-              fill="transparent"
-              stroke="#0284c7"
-              strokeWidth="18"
-              strokeDasharray={`${carbsLen} ${c - carbsLen}`}
-              strokeDashoffset={carbsOffset}
-              strokeLinecap="round"
-            />
-            {/* Fat Arc (Warm Amber) */}
-            <circle
-              cx="80"
-              cy="80"
-              r={r}
-              fill="transparent"
-              stroke="#f59e0b"
-              strokeWidth="18"
-              strokeDasharray={`${fatLen} ${c - fatLen}`}
-              strokeDashoffset={fatOffset}
-              strokeLinecap="round"
-            />
+            {macroTotalKcal > 0 && (
+              <>
+                {/* Protein Arc (Emerald) */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r={r}
+                  fill="transparent"
+                  stroke="#10b981"
+                  strokeWidth="18"
+                  strokeDasharray={`${proteinLen} ${c - proteinLen}`}
+                  strokeDashoffset={proteinOffset}
+                  strokeLinecap="round"
+                />
+                {/* Carbs Arc (Sky Blue) */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r={r}
+                  fill="transparent"
+                  stroke="#0284c7"
+                  strokeWidth="18"
+                  strokeDasharray={`${carbsLen} ${c - carbsLen}`}
+                  strokeDashoffset={carbsOffset}
+                  strokeLinecap="round"
+                />
+                {/* Fat Arc (Warm Amber) */}
+                <circle
+                  cx="80"
+                  cy="80"
+                  r={r}
+                  fill="transparent"
+                  stroke="#f59e0b"
+                  strokeWidth="18"
+                  strokeDasharray={`${fatLen} ${c - fatLen}`}
+                  strokeDashoffset={fatOffset}
+                  strokeLinecap="round"
+                />
+              </>
+            )}
           </svg>
           <div className="lux-donut-center-text">
             <span className="lux-donut-center-cals">
-              {number(totalKcal || goalKcal)}
+              {number(totalKcal)}
             </span>
-            <span className="lux-donut-center-sub">kcal today</span>
+            <span className="lux-donut-center-sub">
+              {isWeek
+                ? `kcal (${number(avgDailyKcal)}/day)`
+                : selectedDay
+                  ? `kcal (${new Date(selectedDay + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })})`
+                  : "kcal today"}
+            </span>
           </div>
         </div>
 
-        {/* 3 Macro Breakdown Cards */}
+        {/* 4 Macro Breakdown Cards (Protein, Carbs, Fats, Fiber) */}
         <div className="lux-macro-cards-grid">
           <div className="lux-macro-pill-card protein">
             <div className="lux-macro-label-row">
@@ -560,7 +812,7 @@ function MacroDonutChart({
             </div>
             <strong className="lux-macro-grams-val">{proteinGrams}g</strong>
             <span className="lux-macro-target-sub">
-              {proteinKcal} kcal • Target ~130g
+              {proteinKcal} kcal • Target ~{proteinTarget}g
             </span>
           </div>
 
@@ -571,7 +823,7 @@ function MacroDonutChart({
             </div>
             <strong className="lux-macro-grams-val">{carbsGrams}g</strong>
             <span className="lux-macro-target-sub">
-              {carbsKcal} kcal • Target ~220g
+              {carbsKcal} kcal • Target ~{carbsTarget}g
             </span>
           </div>
 
@@ -582,7 +834,18 @@ function MacroDonutChart({
             </div>
             <strong className="lux-macro-grams-val">{fatGrams}g</strong>
             <span className="lux-macro-target-sub">
-              {fatKcal} kcal • Target ~55g
+              {fatKcal} kcal • Target ~{fatTarget}g
+            </span>
+          </div>
+
+          <div className="lux-macro-pill-card fiber">
+            <div className="lux-macro-label-row">
+              <span className="lux-macro-name">Fiber</span>
+              <span className="lux-macro-pct-badge">{fiberPct}%</span>
+            </div>
+            <strong className="lux-macro-grams-val">{fiberGrams}g</strong>
+            <span className="lux-macro-target-sub">
+              Gut &amp; Satiety • Target ~{fiberTarget}g
             </span>
           </div>
         </div>
