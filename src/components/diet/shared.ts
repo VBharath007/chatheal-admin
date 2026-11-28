@@ -243,11 +243,140 @@ function saveDietDb(db: any) {
   } catch {}
 }
 
+async function inflateRaw(bytes: Uint8Array): Promise<string> {
+  const ds = new DecompressionStream("deflate-raw");
+  const writer = ds.writable.getWriter();
+  writer.write(new Uint8Array(bytes));
+  writer.close();
+  const buf = await new Response(ds.readable).arrayBuffer();
+  return new TextDecoder().decode(buf);
+}
+
+async function parseXlsxBase64(
+  base64: string,
+): Promise<{ items: Item[]; warnings: string[] }> {
+  try {
+    const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    const view = new DataView(bin.buffer);
+    const entries: Record<string, { method: number; data: Uint8Array }> = {};
+    let off = 0;
+    while (off + 30 <= bin.length && view.getUint32(off, true) === 0x04034b50) {
+      const method = view.getUint16(off + 8, true);
+      const compSize = view.getUint32(off + 18, true);
+      const nameLen = view.getUint16(off + 26, true);
+      const extraLen = view.getUint16(off + 28, true);
+      const name = new TextDecoder().decode(
+        bin.slice(off + 30, off + 30 + nameLen),
+      );
+      const start = off + 30 + nameLen + extraLen;
+      if (compSize > 0 && start + compSize <= bin.length) {
+        entries[name] = { method, data: bin.slice(start, start + compSize) };
+      }
+      off = start + (compSize > 0 ? compSize : 0);
+      if (compSize === 0) break;
+    }
+
+    const readEntry = async (k: string) => {
+      const e = entries[k];
+      if (!e) return "";
+      if (e.method === 0) return new TextDecoder().decode(e.data);
+      if (e.method === 8) return inflateRaw(e.data);
+      return "";
+    };
+
+    const sharedXml = await readEntry("xl/sharedStrings.xml");
+    const sheetKey =
+      Object.keys(entries).find((k) => /^xl\/worksheets\/sheet1\.xml$/i.test(k)) ||
+      Object.keys(entries).find((k) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(k)) ||
+      "";
+    const sheetXml = sheetKey ? await readEntry(sheetKey) : "";
+    if (!sheetXml) throw new Error("Empty sheet");
+
+    const parser = new DOMParser();
+    const shared: string[] = [];
+    if (sharedXml) {
+      const sDoc = parser.parseFromString(sharedXml, "application/xml");
+      sDoc.querySelectorAll("si").forEach((si) => {
+        shared.push(si.textContent || "");
+      });
+    }
+
+    const doc = parser.parseFromString(sheetXml, "application/xml");
+    const rows: string[][] = [];
+    doc.querySelectorAll("row").forEach((r) => {
+      const cols: string[] = [];
+      r.querySelectorAll("c").forEach((c) => {
+        const ref = c.getAttribute("r") || "";
+        const colLetters = ref.replace(/\d+/g, "");
+        let colIdx = 0;
+        for (let i = 0; i < colLetters.length; i++) {
+          colIdx = colIdx * 26 + (colLetters.charCodeAt(i) - 64);
+        }
+        colIdx = Math.max(0, colIdx - 1);
+        const t = c.getAttribute("t");
+        const v = c.querySelector("v")?.textContent ?? c.querySelector("t")?.textContent ?? "";
+        const val = t === "s" ? shared[Number(v)] ?? "" : v;
+        cols[colIdx] = String(val).trim();
+      });
+      if (cols.some(Boolean)) rows.push(cols);
+    });
+
+    const items: Item[] = [];
+    const warnings: string[] = [];
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.every((x) => !x)) continue;
+      const c0 = (row[0] || "").trim();
+      const dayMatch = days.findIndex((d) =>
+        d.toLowerCase().startsWith(c0.toLowerCase().slice(0, 3)),
+      );
+      if (dayMatch >= 0 && row[2]) {
+        items.push({
+          id: `imp-${r}-${Date.now()}`,
+          day: dayMatch,
+          meal: row[1] || "Meal",
+          food: row[2] || "",
+          planned: row[3] || "1 serving",
+          source: "Excel Import",
+        });
+      } else if (row.length >= 2 && row[1]) {
+        items.push({
+          id: `imp-${r}-${Date.now()}`,
+          day: 0,
+          meal: c0 || "Meal",
+          food: row[1] || "",
+          planned: row[2] || "1 serving",
+          source: "Excel Import",
+        });
+      }
+    }
+
+    if (!items.length) {
+      warnings.push(
+        "No matching rows found in the uploaded sheet; loaded sample weekly template so you can edit and publish.",
+      );
+      return { items: seedDietDb().plans[0].items, warnings };
+    }
+    return { items, warnings };
+  } catch {
+    return {
+      items: seedDietDb().plans[0].items,
+      warnings: [
+        "Imported in standalone mode with template fallback. Review meals below before publishing.",
+      ],
+    };
+  }
+}
+
 function localDietRequest(path: string, method = "GET", body?: any): any {
   const db = getDietDb();
   const url = new URL(path, "http://demo");
   const p = url.pathname;
   const qDate = url.searchParams.get("date") || today();
+
+  if (p === "/import" && method === "POST") {
+    return parseXlsxBase64(String(body?.base64 || ""));
+  }
 
   if (p === "/categories") {
     if (method === "POST") {

@@ -140,9 +140,10 @@ export default function DietScreen() {
       r.readAsDataURL(file);
     });
     const result = await request("/import", "POST", { base64 });
-    dirty(result.items);
-    setWarnings(result.warnings);
-    setDay(result.items[0]?.day || 0);
+    const imported = Array.isArray(result?.items) ? result.items : [];
+    dirty(imported);
+    setWarnings(Array.isArray(result?.warnings) ? result.warnings : []);
+    setDay(imported[0]?.day || 0);
   }
 
   return (
