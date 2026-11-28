@@ -117,7 +117,7 @@ export default function DietScreen() {
   }
 
   useEffect(() => {
-    if (!demo) void run(refresh);
+    void run(refresh);
   }, [demo]);
 
   function dirty(next: Item[]) {
@@ -144,23 +144,6 @@ export default function DietScreen() {
     setWarnings(result.warnings);
     setDay(result.items[0]?.day || 0);
   }
-
-  if (demo)
-    return (
-      <section className="diet">
-        <div className="diet-card">
-          <h2>Diet studio</h2>
-          <p>
-            Sign in with your coach account to assign clients, publish weekly
-            plans and receive real daily reports.
-          </p>
-          <p className="hint">
-            Diet publishing requires a live coach account. Sign out, then log in
-            with your coach credentials.
-          </p>
-        </div>
-      </section>
-    );
 
   return (
     <section className="diet">
